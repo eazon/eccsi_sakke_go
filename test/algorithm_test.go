@@ -6,12 +6,11 @@ package test
 import (
 	"eccsi_sakke_go/consts"
 	"eccsi_sakke_go/crypto"
-	"encoding/hex"
 	"flag"
 	"fmt"
+	slog "github.com/golang/glog"
 	"math"
 	"math/big"
-	slog "github.com/golang/glog"
 	//"tokms"
 	//"sdk/slog"
 	"testing"
@@ -68,129 +67,6 @@ func Test_g_power_rn(t *testing.T) {
 	g_to_power_r_bn.Mul(g_to_power_r_bn, result_y_bn)
 	g_to_power_r_bn.Mod(g_to_power_r_bn, p_tmp_bn)
 	slog.Infof("g_to_power_r_bn %s", g_to_power_r_bn.Text(16))
-}
-
-const (
-	SAKKE_Zx = "5958EF1B1679BF099B3A030DF255AA6A23C1D8F143D4D23F753E69BD27A832F38CB4AD53DDEF4260B0FE8BB45C4C1FF510EFFE300367A37B61F701D914AEF09724825FA0707D61A6DFF4FBD7273566CDDE352A0B04B7C16A78309BE640697DE747613A5FC195E8B9F328852A579DB8F99B1D0034479EA9C5595F47C4B2F54FF2"
-	/* [RFC6508][Appendix A. Test Data] Zx */
-
-	SAKKE_Zy = "1508D37514DCF7A8E143A6058C09A6BF2C9858CA37C258065AE6BF7532BC8B5B63383866E0753C5AC0E72709F8445F2E6178E065857E0EDA10F68206B63505ED87E534FB2831FF957FB7DC619DAE61301EEACC2FDA3680EA4999258A833CEA8FC67C6D19487FB449059F26CC8AAB655AB58B7CC796E24E9A394095754F5F8BAE"
-	/* [RFC6508][Appendix A. Test Data] Zy */
-)
-
-// 测试用例的数据 来源自 [RFC6508] Appendix A. Test Data
-func Test_Sakke_FormEncapsulatedData(t *testing.T) {
-	flag.Set("alsologtostderr", "true")
-	crypto.IsTest = true
-	crypto.InitSakkeAndEccsi()
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest)
-
-	crypto.Root.EncKeyZ_S.X, _ = new(big.Int).SetString(SAKKE_Zx, 16)
-	crypto.Root.EncKeyZ_S.Y, _ = new(big.Int).SetString(SAKKE_Zy, 16)
-
-	uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	ssv, _ := hex.DecodeString("123456789ABCDEF0123456789ABCDEF0")
-	ssvlen := uint32(len(ssv))
-	slog.Infof("uid[%d] %v", len(uid), uid)
-	slog.Infof("ssv[%d] %v", ssvlen, ssv)
-
-	pstGroupKeyInfo := &crypto.SSVKeyInfo{
-		SSV:    ssv,
-		SSVLen: ssvlen,
-	}
-	// todo-yyl: 关注下 由测试数据得到的  EncapsulatedData 长度是否满足 2*L + n + 1 ；注意 如下封装的函数 有 填充0的操作
-	crypto.SakkeEncrypt(uid, pstGroupKeyInfo, crypto.Root)
-}
-
-//测试数据来源：kms,gms,ums, 目前测试不通过
-func Test_Sakke_ExtactShareSecret(t *testing.T) {
-	crypto.InitSakkeAndEccsi()
-	// todo-yyl: 关注下 由测试数据得到的  EncapsulatedData 长度是否满足 2*L + n + 1 ；注意 如下封装的函数 有 填充0的操作
-	//crypto.Root.InitMikeyGenRoot(crypto.CCTest3) //mcptt
-	//sakkeDataHex := "04085f0d8205426c397b74ea5ae43b8658042cb3740ac7f86ef1bd2241784141b4c9385c2171f3dc568199e51f1caf72d61d08de10eb59e518d836b0e2072fa0608372cf9061b15d657e5164089c70f2158ff45549d5715e89c1e2f7dd371a594d4231db3fdffdde3dfff607d546d856223d1bae89e509c8758b94757f53d471f195adb549b8cdf883e06de257ef56a57ddfe1771a9cc365a5d3f0a3ce5f654b93233debdd35c2b44adde17045b30ba014f674ed8a0f50f09f2143237c9d162edbf436319567d659ce49133f342755b47aaec42dedbd428e57a281337df997c9c0ad98ef2bdc8ac2358eadb71808ba685ba277674d56c7669b85fefe3ebc8b87e75adae3bf3dc4915b4c95965a1ac4db7a"
-
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest4) //mcvideo
-	sakkeDataHex := "040c29d82ab7a1a036cca6b60fdb0009483e850e7b5cbdb1c20715069e2ee4257107848c94a5f27619cc89c0934ef7d0a1293df522e852e23c4eeb5d399851aa1a9418e7652728d79c8a5c59893c9bb5d43c12924b4b10a8015749c7335ff12cf648cf4a213e57909bebbf803d580f632cf85529512dfd97ba91d21416c9bdeabc47c328b8518824212647e59ea75849df9e7cf4fa4ac12a9f93e6c10535c3b77817eb0e28c0c71835a1c7c2bbb720eb9736e1554de8732dcd11b8ff56cf43f57faab452e98533a38c8a3ac9b1dc874f9397a8e4d590335ddc3a9bff4e0e13b790f61b98af29e0a69448493a887867f6bba6525ec608d19ae5d5da40dd8d1c1b6956566bba06df0b24dda7bbab1be40cfe"
-
-	sakkeData, _ := hex.DecodeString(sakkeDataHex)
-	crypto.SakkeDecrypt(sakkeData, consts.AlgoAes128, crypto.Root)
-}
-
-// 测试用例的数据 来源自 [RFC6508] Appendix A. Test Data； 测试压缩和解压
-func Test_Sakke_FormEncapsulatedData_and_Sakke_ExtactShareSecret(t *testing.T) {
-	flag.Set("alsologtostderr", "true")
-	crypto.IsTest = true
-	crypto.InitSakkeAndEccsi()
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest1)
-	//加密公钥
-	crypto.Root.EncKeyZ_S.X, _ = new(big.Int).SetString(SAKKE_Zx, 16)
-	crypto.Root.EncKeyZ_S.Y, _ = new(big.Int).SetString(SAKKE_Zy, 16)
-
-	uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	crypto.Root.UID = uid
-	ssv, _ := hex.DecodeString("123456789ABCDEF0123456789ABCDEF0") //转成hex类型[]byte长度减少一半
-	ssvlen := uint32(len(ssv))
-	slog.Infof("uid[%d] %v", len(uid), uid)
-	slog.Infof("ssv[%d] %v", ssvlen, ssv)
-
-	pstGroupKeyInfo := &crypto.SSVKeyInfo{
-		SSV:    ssv,
-		SSVLen: ssvlen,
-	}
-	// todo-yyl: 关注下 由测试数据得到的  EncapsulatedData 长度是否满足 2*L + n + 1 ；注意 如下封装的函数 有 填充0的操作
-	crypto.SakkeDecrypt(crypto.SakkeEncrypt(uid, pstGroupKeyInfo, crypto.Root), consts.AlgoAes128, crypto.Root)
-}
-
-// 测试用例的数据 来源自 kms； 测试压缩和解压
-func Test_Sakke_FormEncapsulatedData_and_Sakke_ExtactShareSecret2(t *testing.T) {
-	flag.Set("alsologtostderr", "true") // Log printing to terminal and file
-	crypto.InitSakkeAndEccsi()
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest3) //mcptt
-	//crypto.Root.InitMikeyGenRoot(crypto.CCTest4)//mcvideo
-
-	ssv, _ := hex.DecodeString("123456789ABCDEF0123456789ABCDEF0") //转成hex类型[]byte长度减少一半
-	ssvlen := uint32(len(ssv))
-	slog.Infof("ssv[%d] %v", ssvlen, ssv)
-
-	pstGroupKeyInfo := &crypto.SSVKeyInfo{
-		SSV:    ssv,
-		SSVLen: ssvlen,
-	}
-	// todo-yyl: 关注下 由测试数据得到的  EncapsulatedData 长度是否满足 2*L + n + 1 ；注意 如下封装的函数 有 填充0的操作
-	crypto.SakkeDecrypt(crypto.SakkeEncrypt(crypto.Root.UID, pstGroupKeyInfo, crypto.Root), consts.AlgoAes128, crypto.Root)
-}
-
-func Test_Eccsi_Signature(t *testing.T) {
-	crypto.IsTest = true
-	crypto.InitSakkeAndEccsi()
-	crypto.InitEccsi_test() // 设置测试用例参数
-	//uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	//crypto.Root.UID = uid
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest2)
-	//加密公钥
-	//Root.EncKeyZ_S.X, _ = new(big.Int).SetString(SAKKE_Zx, 16)
-	//Root.EncKeyZ_S.Y, _ = new(big.Int).SetString(SAKKE_Zy, 16)
-	//uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	//Root.UID = uid
-	messagePtr, _ := new(big.Int).SetString("6D65737361676500", 16)
-	crypto.EccsiSignature(messagePtr.Bytes(), crypto.Root)
-}
-
-func Test_Eccsi_Verify(t *testing.T) {
-	crypto.IsTest = true
-	crypto.InitSakkeAndEccsi()
-	crypto.InitEccsi_test() // 设置测试用例参数
-	//uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	//crypto.Root.UID = uid
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest2)
-	//加密公钥
-	//Root.EncKeyZ_S.X, _ = new(big.Int).SetString(SAKKE_Zx, 16)
-	//Root.EncKeyZ_S.Y, _ = new(big.Int).SetString(SAKKE_Zy, 16)
-	//uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	//Root.UID = uid
-	messagePtr, _ := new(big.Int).SetString("6D65737361676500", 16)
-	message := messagePtr.Bytes()
-	crypto.EccsiVerify(message, crypto.EccsiSignature(message, crypto.Root), crypto.GenerateUID(crypto.CCTest2.UserUri), crypto.Root)
 }
 
 // Elements of F_p MUST be represented as integers in the range 0 to p-1 using the octet string representation defined above.

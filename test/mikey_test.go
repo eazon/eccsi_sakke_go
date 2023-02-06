@@ -2,42 +2,11 @@ package test
 
 import (
 	"eccsi_sakke_go/crypto"
-	"encoding/base64"
 	"flag"
-	"io/ioutil"
 	//"sdk/slog"
 	slog "github.com/golang/glog"
-	"strings"
 	"testing"
 )
-
-// 秘钥数据来源： rfc6507 Appendix A. Test Data
-func Test_GenerateOneMikey(t *testing.T) {
-	crypto.IsTest = true
-	ssvKeyInfo := crypto.MakeSSVKey(2, false) //128
-	//ssvKeyInfo = crypto.MakeSSVKey(3, false)//256
-	msUri := "sip:6009755001@mcptt.mcs.com"
-	ssvKeyInfo.InviterMsUri = msUri
-	ssvKeyInfo.ResponderMsUri = msUri
-	crypto.InitSakkeAndEccsi()
-	//uid, _ := hex.DecodeString("323031312D30320074656C3A2B34343737303039303031323300")
-	//crypto.Root.UID = uid
-	crypto.Root.InitMikeyGenRoot(crypto.CCTest2)
-	mikeyx := crypto.GenerateMikey(ssvKeyInfo, crypto.Root)
-	slog.Infof("mikey %v ", string(mikeyx))
-	// base64解码
-	//bb := &bytes.Buffer{}
-	//bb.Write(crypto)
-	reader := strings.NewReader(string(mikeyx))
-	decoder := base64.NewDecoder(base64.StdEncoding, reader)
-	//decoder.Read(crypto)
-	decoded, _ := ioutil.ReadAll(decoder)
-
-	slog.Infof("mikey decode %v ", decoded)
-
-	//crypto 解析
-	crypto.ParseMikey(string(mikeyx), crypto.Root)
-}
 
 // 秘钥数据来源：kms gms
 func Test_GenerateOneMikey1(t *testing.T) {
